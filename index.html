@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>우리들의 모임 도우미</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4D96FF;
+            --bg: #f4f7f6;
+            --text: #333;
+            --white: #ffffff;
+            --gray: #e0e0e0;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 헤더 */
+        header {
+            background: var(--white);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 10;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        /* 메인 컨텐츠 */
+        main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        .page.active { display: flex; }
+
+        /* 카드 스타일 */
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 25px 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            width: 100%;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-food { background: var(--primary); }
+        .btn-game { background: var(--secondary); }
+        
+        /* 모드 스위치 버튼 */
+        .mode-switch {
+            display: flex;
+            background: #eee;
+            border-radius: 10px;
+            padding: 5px;
+            margin-bottom: 15px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #777;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .mode-btn.active {
+            background: var(--white);
+            color: var(--secondary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* --- 음식 페이지 스타일 --- */
+        .result-display {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            word-break: keep-all;
+        }
+
+        /* 필터 아코디언 */
+        .filter-section {
+            width: 100%;
+            text-align: left;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .filter-content {
+            display: none;
+            padding: 10px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .filter-content.open { display: block; }
+
+        .category-group { margin-bottom: 15px; }
+        .cat-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            color: #555;
+        }
+        .cat-title input { margin-right: 8px; transform: scale(1.2); }
+        
+        .food-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding-left: 10px;
+        }
+        .food-checkbox { display: none; }
+        .food-label {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+            background: #eee;
+            border-radius: 20px;
+            color: #777;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .food-checkbox:checked + .food-label {
+            background: #ffe0e0;
+            color: var(--primary);
+            font-weight: bold;
+            border: 1px solid var(--primary);
+        }
+
+        /* --- 룰렛 페이지 스타일 --- */
+        canvas {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+            margin: 10px auto;
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
+        input[type="text"] {
+            flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none;
+        }
+        .tag-container {
+            display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 15px;
+        }
+        .tag {
+            background: #eef2ff; color: var(--secondary); padding: 5px 10px; border-radius: 15px; font-size: 0.85rem; cursor: pointer;
+        }
+        .arrow-down {
+            width: 0; height: 0; 
+            border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 20px solid #333;
+            margin: 0 auto -10px auto; position: relative; z-index: 5;
+        }
+
+        /* 결과 박스 (당첨 시 표시) */
+        .game-result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff3cd;
+            border: 2px solid #ffecb5;
+            border-radius: 15px;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .result-title { font-size: 1.5rem; font-weight: bold; color: #d63384; margin-bottom: 10px; }
+        .result-desc { font-size: 1rem; color: #664d03; line-height: 1.5; }
+
+        /* 룰 설명서 */
+        .rule-book {
+            margin-top: 15px;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+            font-size: 0.9rem;
+        }
+        .rule-item { margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .rule-item strong { color: var(--secondary); }
+
+        /* 하단 네비게이션 */
+        nav {
+            background: var(--white);
+            display: flex;
+            border-top: 1px solid #eee;
+            height: 65px;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #aaa; font-size: 0.75rem; cursor: pointer; transition: 0.2s;
+        }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        .nav-item span { font-size: 1.4rem; margin-bottom: 4px; }
+        .nav-item:nth-child(2).active { color: var(--secondary); }
+
+    </style>
+</head>
+<body>
+
+    <header>🎉 우리들의 모임 도우미</header>
+
+    <main>
+        <!-- 1. 음식 추천 페이지 -->
+        <section id="page-food" class="page active">
+            <div class="card">
+                <h2>🍽️ 오늘 뭐 먹지?</h2>
+                <div class="result-display" id="foodDisplay">메뉴를 골라보세요!</div>
+                <button class="btn btn-food" id="foodBtn" onclick="spinFood()">랜덤 선택 시작!</button>
+                
+                <!-- 필터 영역 -->
+                <div class="filter-section">
+                    <div class="filter-header" onclick="toggleFilter()">
+                        <span>⚙️ 메뉴 설정 / 제외하기</span>
+                        <span id="filterArrow">▼</span>
+                    </div>
+                    <div class="filter-content" id="filterContent">
+                        <div style="text-align:right; margin-bottom:10px;">
+                            <button style="font-size:0.8rem; padding:5px 10px;" onclick="resetFilters()">전체 선택</button>
+                        </div>
+                        <div id="foodListContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 룰렛 게임 페이지 -->
+        <section id="page-game" class="page">
+            <div class="card">
+                <h2>🎯 벌칙/내기 룰렛</h2>
+                
+                <!-- 모드 스위치 -->
+                <div class="mode-switch">
+                    <button class="mode-btn active" id="modeMember" onclick="setGameMode('member')">👥 멤버 뽑기</button>
+                    <button class="mode-btn" id="modePenalty" onclick="setGameMode('penalty')">☠️ 지각 벌칙</button>
+                </div>
+
+                <!-- 멤버 모드일 때만 보이는 입력창 -->
+                <div class="input-group" id="memberInputGroup">
+                    <input type="text" id="newItem" placeholder="이름 추가">
+                    <button class="btn" style="width:auto; background:#666;" onclick="addMember()">추가</button>
+                </div>
+                
+                <!-- 벌칙 모드일 때 보이는 설명서 버튼 -->
+                <div id="penaltyRuleBtn" style="display:none; margin-bottom:10px;">
+                    <button onclick="toggleRuleBook()" style="background:none; border:1px solid #ddd; padding:5px 10px; border-radius:15px; font-size:0.8rem; color:#666;">📜 벌칙 설명 보기</button>
+                    <div id="ruleBook" class="rule-book"></div>
+                </div>
+
+                <div class="tag-container" id="itemList"></div>
+
+                <div class="arrow-down"></div>
+                <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                
+                <!-- 결과 박스 -->
+                <div id="gameResultBox" class="game-result-box">
+                    <div class="result-title" id="resTitle">당첨!</div>
+                    <div class="result-desc" id="resDesc">내용이 여기에 나옵니다.</div>
+                </div>
+
+                <button class="btn btn-game" onclick="spinWheel()">돌려 돌려!</button>
+            </div>
+        </section>
+    </main>
+
+    <nav>
+        <div class="nav-item active" onclick="switchTab('food')">
+            <span>🍚</span>메뉴 추천
+        </div>
+        <div class="nav-item" onclick="switchTab('game')">
+            <span>🎲</span>룰렛 게임
+        </div>
+    </nav>
+
+    <script>
+        /* =========================================
+           데이터 정의
+           ========================================= */
+        const foodData = {
+            "🇰🇷 한식": ["김치찌개", "된장찌개", "제육볶음", "불고기", "삼겹살", "비빔밥", "감자탕", "칼국수", "순대국", "찜닭"],
+            "🇨🇳 중식": ["짜장면", "짬뽕", "탕수육", "마라탕", "마라샹궈", "꿔바로우", "양꼬치", "마파두부", "볶음밥", "우육면"],
+            "🇯🇵 일식": ["초밥(스시)", "라멘", "돈카츠", "규동", "가츠동", "사케동", "텐동", "오코노미야키", "야키소바", "우동"],
+            "🇺🇸 양식": ["스테이크", "파스타", "피자", "버거", "리조또", "치킨윙", "바비큐 립", "수프", "샐러드", "로스트 치킨"],
+            "🍢 분식": ["떡볶이", "순대", "김밥", "튀김", "라면", "쫄면", "비빔국수", "치즈라볶이", "만두", "잔치국수"],
+            "🌮 멕시칸": ["타코", "부리또", "퀘사디야", "나초", "엔칠라다", "파히타", "치미창가", "멕시칸 라이스", "살사&과카몰리", "토스타다"],
+            "🇮🇹 이탈리안": ["마르게리타 피자", "까르보나라", "라자냐", "봉골레", "페페론치노", "뇨끼", "카프레제", "미네스트로네", "티라미수", "리조또"],
+            "🇫🇷 프렌치": ["스테이크 프리츠", "에스카르고", "카슐레", "라따뚜이", "크루아상", "바게트 샌드위치", "오니온 수프", "키쉬", "마카롱", "크렘브륄레"],
+            "🇹🇭 태국": ["팟타이", "똠얌꿍", "쏨땀", "그린커리", "레드커리", "카오만가이", "팟카파오", "뿌팟퐁커리", "얌운센", "카오팟"],
+            "🇻🇳 베트남": ["쌀국수", "분짜", "반미", "분보후에", "분짜조", "짜조", "껌승", "카페쓰어다", "반쎄오", "월남쌈"]
+        };
+
+        const defaultMembers = ["박기태", "김윤수", "고승규", "송주헌", "김찬영", "이상범", "김성권", "이승현", "유진하", "이정민", "김장현", "조인준", "전병현", "김태호"];
+
+        // 지각 벌칙 데이터 (설명 추가)
+        const penaltyData = [
+            { text: "모임비x1만", weight: 1, desc: "현재 자리에 있는 사람 수 X 10,000원 입금하기! (확률 낮음)" },
+            { text: "소주 원샷", weight: 1, desc: "깔끔하게 소주 한 잔 원샷! (확률 낮음)" },
+            { text: "셀카 동영상", weight: 3, desc: "'지각은 나쁜 것입니다' 대사 치면서 셀카 동영상 촬영 후 단톡방 업로드" },
+            { text: "2차 예약", weight: 3, desc: "오늘 2차 장소 또는 다음 모임 장소/메뉴 예약하고 준비하기" },
+            { text: "금칙어 지정", weight: 3, desc: "지각자 '하루 금칙어' 지정 (예: '존나' 쓰면 벌금 5000원)" },
+            { text: "프사 변경", weight: 3, desc: "친구들이 원하는 엽기 사진으로 오늘 술자리 끝날 때까지 프사 변경" }
+        ];
+
+        /* =========================================
+           1. 음식 추천 로직
+           ========================================= */
+        function initFoodFilters() {
+            const container = document.getElementById('foodListContainer');
+            let html = '';
+            for (const [category, items] of Object.entries(foodData)) {
+                html += `
+                <div class="category-group">
+                    <div class="cat-title">
+                        <input type="checkbox" checked onchange="toggleCategory(this, '${category}')"> ${category}
+                    </div>
+                    <div class="food-items" id="cat-${category}">
+                        ${items.map(item => `
+                            <input type="checkbox" id="chk-${item}" class="food-checkbox" value="${item}" checked>
+                            <label for="chk-${item}" class="food-label">${item}</label>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function toggleCategory(source, categoryName) {
+            const container = document.getElementById(`cat-${categoryName}`);
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function toggleFilter() {
+            const content = document.getElementById('filterContent');
+            const arrow = document.getElementById('filterArrow');
+            content.classList.toggle('open');
+            arrow.innerText = content.classList.contains('open') ? '▲' : '▼';
+        }
+
+        function resetFilters() {
+            const checkboxes = document.querySelectorAll('#foodListContainer input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+
+        function getSelectedFoods() {
+            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
+            const list = [];
+            checkboxes.forEach(cb => list.push(cb.value));
+            return list;
+        }
+
+        function spinFood() {
+            const availableFoods = getSelectedFoods();
+            const display = document.getElementById('foodDisplay');
+            const btn = document.getElementById('foodBtn');
+
+            if (availableFoods.length === 0) {
+                alert("선택된 메뉴가 없습니다! 필터를 확인해주세요.");
+                return;
+            }
+            if (btn.disabled) return;
+            btn.disabled = true;
+            btn.innerText = "고르는 중...";
+
+            let counter = 0;
+            const interval = setInterval(() => {
+                const randomFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+                display.innerText = randomFood;
+                counter += 50;
+                if (counter > 1500) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerText = "다시 고르기";
+                    display.style.transform = "scale(1.2)";
+                    setTimeout(() => display.style.transform = "scale(1)", 200);
+                }
+            }, 50);
+        }
+
+        /* =========================================
+           2. 룰렛 게임 로직
+           ========================================= */
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let currentMode = 'member'; 
+        let currentItems = [...defaultMembers]; 
+        let currentWeights = []; 
+        let currentDescs = []; // 설명 저장용
+
+        let currentAngle = 0;
+        let isSpinning = false;
+        const colors = ["#FF6B6B", "#4D96FF", "#FFD93D", "#6BCB77", "#9D4EDD", "#FF9F43"];
+
+        function setGameMode(mode) {
+            if(isSpinning) return;
+            currentMode = mode;
+            
+            document.getElementById('modeMember').className = mode === 'member' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('modePenalty').className = mode === 'penalty' ? 'mode-btn active' : 'mode-btn';
+            
+            document.getElementById('memberInputGroup').style.display = mode === 'member' ? 'flex' : 'none';
+            document.getElementById('penaltyRuleBtn').style.display = mode === 'penalty' ? 'block' : 'none';
+            document.getElementById('gameResultBox').style.display = 'none'; // 결과창 숨김
+
+            if (mode === 'member') {
+                currentItems = [...defaultMembers];
+                currentWeights = currentItems.map(() => 1);
+                currentDescs = currentItems.map(() => "축하합니다! (또는 안타깝습니다!)");
+            } else {
+                currentItems = penaltyData.map(p => p.text);
+                currentWeights = penaltyData.map(p => p.weight);
+                currentDescs = penaltyData.map(p => p.desc);
+                renderRuleBook();
+            }
+            drawWheel();
+        }
+
+        function renderRuleBook() {
+            const book = document.getElementById('ruleBook');
+            book.innerHTML = penaltyData.map(p => `
+                <div class="rule-item">
+                    <strong>${p.text}</strong><br>${p.desc}
+                </div>
+            `).join('');
+        }
+
+        function toggleRuleBook() {
+            const book = document.getElementById('ruleBook');
+            book.style.display = book.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function drawWheel() {
+            if (currentItems.length === 0) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            const totalWeight = currentWeights.reduce((a, b) => a + b, 0);
+            let startAngle = currentAngle;
+            const radius = canvas.width / 2;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < currentItems.length; i++) {
+                const sliceAngle = (currentWeights[i] / totalWeight) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius, startAngle, endAngle);
+                ctx.lineTo(radius, radius);
+                ctx.fill();
+
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 20px Arial";
+                ctx.fillText(currentItems[i], radius - 20, 6);
+                ctx.restore();
+
+                startAngle = endAngle;
+            }
+            updateItemList();
+        }
+
+        function updateItemList() {
+            const list = document.getElementById('itemList');
+            list.innerHTML = '';
+            
+            currentItems.forEach((item, index) => {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                
+                if (currentMode === 'member') {
+                    tag.innerText = item + " ✖";
+                    tag.onclick = () => {
+                        if(isSpinning) return;
+                        currentItems.splice(index, 1);
+                        currentWeights.splice(index, 1);
+                        currentDescs.splice(index, 1);
+                        drawWheel();
+                    };
+                } else {
+                    const w = currentWeights[index];
+                    const probText = w === 1 ? "(낮음)" : "(중간)";
+                    tag.innerText = item + " " + probText;
+                    tag.style.cursor = "default";
+                    tag.style.background = "#f0f0f0";
+                    tag.style.color = "#666";
+                }
+                list.appendChild(tag);
+            });
+        }
+
+        function addMember() {
+            if (currentMode !== 'member') return;
+            const input = document.getElementById('newItem');
+            const val = input.value.trim();
+            if(val) {
+                currentItems.push(val);
+                currentWeights.push(1);
+                currentDescs.push("축하합니다!");
+                input.value = '';
+                drawWheel();
+            }
+        }
+
+        function spinWheel() {
+            if (isSpinning || currentItems.length < 2) {
+                if(currentItems.length < 2) alert("최소 2개 이상의 항목이 필요합니다!");
+                return;
+            }
+            
+            // 결과창 숨김
+            document.getElementById('gameResultBox').style.display = 'none';
+            
+            isSpinning = true;
+            const spinTime = 3000;
+            const spinAngle = Math.random() * 10 + 20; 
+            let start = null;
+            
+            function animate(timestamp) {
+                if (!start) start = timestamp;
+                const progress = timestamp - start;
+                if (progress < spinTime) {
+                    const easeOut = 1 - Math.pow(1 - progress / spinTime, 3);
+                    currentAngle += (spinAngle * (1 - easeOut)) * 0.1;
+                    drawWheel();
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    showResult();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function showResult() {
+            // 화살표는 상단(270도, 1.5PI)에 위치
+            // 현재 각도를 0~2PI로 정규화
+            const totalWeight = currentWeights.reduce((a, b) => a + b, 0);
+            let normalizedAngle = currentAngle % (2 * Math.PI);
+            
+            // 캔버스 그리기 시작점(0도)에서 화살표 위치까지의 각도 차이 계산
+            // 화살표 위치(1.5PI)에서 현재 회전각도를 뺌 (역방향 추적)
+            let pointerAngle = (1.5 * Math.PI - normalizedAngle);
+            if (pointerAngle < 0) pointerAngle += 2 * Math.PI;
+
+            // 누적 각도로 어떤 아이템인지 찾기
+            let accumulatedAngle = 0;
+            let selectedIndex = 0;
+
+            for (let i = 0; i < currentItems.length; i++) {
+                const sliceAngle = (currentWeights[i] / totalWeight) * 2 * Math.PI;
+                if (pointerAngle >= accumulatedAngle && pointerAngle < accumulatedAngle + sliceAngle) {
+                    selectedIndex = i;
+                    break;
+                }
+                accumulatedAngle += sliceAngle;
+            }
+
+            // 결과 표시
+            const box = document.getElementById('gameResultBox');
+            const title = document.getElementById('resTitle');
+            const desc = document.getElementById('resDesc');
+
+            title.innerText = "🎉 " + currentItems[selectedIndex] + " 🎉";
+            desc.innerText = currentDescs[selectedIndex];
+            box.style.display = "block";
+        }
+
+        /* =========================================
+           공통: 탭 전환 및 초기 실행
+           ========================================= */
+        function switchTab(tabName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('page-' + tabName).classList.add('active');
+            const navIndex = tabName === 'food' ? 0 : 1;
+            document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+        }
+
+        // 앱 시작 시 실행
+        initFoodFilters();
+        setGameMode('member'); 
+
+    </script>
+</body>
+</html>
